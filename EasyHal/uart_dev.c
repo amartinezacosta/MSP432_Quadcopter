@@ -78,16 +78,16 @@ extern uint32_t SystemCoreClock;
 
 eUSCI_UART_ConfigV1 uart_config[UART_COUNT] =
 {
-    EUSCI_A_UART_CLOCKSOURCE_SMCLK,          // SMCLK Clock Source
-    0,                                      // will be changed later
-    0,                                       // will be changed later
-    0,                                      // will be changed later
-    EUSCI_A_UART_NO_PARITY,                  // No Parity
-    EUSCI_A_UART_MSB_FIRST,                  // MSB First
-    EUSCI_A_UART_ONE_STOP_BIT,               // One stop bit
-    EUSCI_A_UART_MODE,                       // UART mode
-    EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION,  // Oversampling
-    EUSCI_A_UART_8_BIT_LEN                  // 8 bit data length
+        EUSCI_A_UART_CLOCKSOURCE_SMCLK,          // SMCLK Clock Source
+        0,                                      // will be changed later
+        0,                                       // will be changed later
+        0,                                      // will be changed later
+        EUSCI_A_UART_NO_PARITY,                  // No Parity
+        EUSCI_A_UART_MSB_FIRST,                  // MSB First
+        EUSCI_A_UART_ONE_STOP_BIT,               // One stop bit
+        EUSCI_A_UART_MODE,                       // UART mode
+        EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION,  // Oversampling
+        EUSCI_A_UART_8_BIT_LEN                  // 8 bit data length
 };
 
 void uart_dev_init(uint32_t index, uint32_t baudrate)
