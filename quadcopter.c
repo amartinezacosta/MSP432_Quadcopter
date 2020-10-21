@@ -93,7 +93,8 @@ void *mainThread(void *arg0)
             packet.raw_mag[i] = raw_mag[i];
         }
 
-        packet.time = dt;
+        packet.dt = dt;
+        packet.time = t;
 
         //Queue telemetry packet
         mq_send(mq, (char*)&packet, sizeof(telemetry_t), NULL);
@@ -114,12 +115,11 @@ void *telemetry_thread(void *arg0)
     while(1)
     {
         status = mq_receive(mq, (char*)&packet, sizeof(telemetry_t), NULL);
-
         if(status > 0)
         {
-            UARTDEBUG_printf("%f, %i, %i, %i, %i, %i, %i, %i, %i, %i\n", packet.time, packet.raw_accel[0], packet.raw_accel[1], packet.raw_accel[2],
-                                                                                      packet.raw_gyro[0], packet.raw_gyro[1], packet.raw_gyro[2],
-                                                                                      packet.raw_mag[0], packet.raw_mag[1], packet.raw_mag[2]);
+            UARTDEBUG_printf("%f, %f, %i, %i, %i, %i, %i, %i, %i, %i, %i\n", packet.time, packet.dt, packet.raw_accel[0], packet.raw_accel[1], packet.raw_accel[2],
+                                                                                                     packet.raw_gyro[0], packet.raw_gyro[1], packet.raw_gyro[2],
+                                                                                                     packet.raw_mag[0], packet.raw_mag[1], packet.raw_mag[2]);
         }
 
     }
