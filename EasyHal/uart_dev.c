@@ -21,7 +21,7 @@
 #include "ti_drivers_config.h"
 
 bool uart_open[UART_COUNT] = {false, false};
-const uint32_t uart_configs[UART_COUNT] = {CONFIG_UART_0, CONFIG_UART_1};
+const uint32_t uart_configs[UART_COUNT] = {CONFIG_UART_0, CONFIG_UART_1, CONFIG_UART_2};
 UART_Handle UART_handles[UART_COUNT];
 
 void uart_dev_init(uint32_t index, uint32_t baudrate)

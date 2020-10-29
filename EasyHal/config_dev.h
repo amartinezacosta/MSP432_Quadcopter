@@ -20,7 +20,7 @@
 //#define MSP432P401R_DRA_I2C
 
 /*PWM EasyHal layer selection--------------------*/
-//#define MSP432P401R_RTOS_PWM
+#define MSP432P401R_RTOS_PWM
 //#define MSP432P401R_DRIVERLIB_PWM
 //#define MSP432P401R_DRA_PWM
 

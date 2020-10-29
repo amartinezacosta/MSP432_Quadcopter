@@ -1,127 +1,148 @@
 #include "MPU6050.h"
 #include "QMC5883.h"
+#include "BME280.h"
 #include "ESC.h"
 #include "UARTDEBUG.h"
+#include "telemetry.h"
 
 #include "EasyHal/time_dev.h"
 
 #include <mqueue.h>
 #include <pthread.h>
 #include <unistd.h>
-
-#define TELEMETRY_QUEUE_SIZE    256
-
-typedef struct
-{
-    int16_t raw_accel[3];
-    int16_t raw_gyro[3];
-    int16_t raw_mag[3];
-    float dt;
-    float time;
-}telemetry_t;
+#include <math.h>
 
 void *telemetry_thread(void *arg0);
 
 void *mainThread(void *arg0)
 {
     time_dev_init();
+    UARTDEBUG_init(115200);
 
-    UARTDEBUG_init(9600);
+    //1. Initialize hardware devices and sensors
+    UARTDEBUG_printf("LOG:****UTEP Senior Project II Drone V1.0****\n");
+    UARTDEBUG_printf("LOG:Initializing hardware devices\n");
     MPU6050_init(MPU6050_DEFAULT_ADDRESS);
+    BME280_init();
     QMC5883_init();
     ESC_init();
 
-    ESC_arm();
-    ESC_calibrate();
+    UARTDEBUG_printf("LOG:Hardware devices initialized! 1.MPU6050 2.BME280 3.QMC5883 4.ublox GPS\n");
 
-    telemetry_t packet;
+    //2. Initialize telemetry
+    UARTDEBUG_printf("LOG:Initializing telemetry thread and queue\n");
+    telemetry_init();
+    UARTDEBUG_printf("LOG:telemetry thread running\n");
+
+    //2. Arm and Calibrate ESCs
+    UARTDEBUG_printf("LOG:Arming ESCs\n");
+    ESC_arm();
+    UARTDEBUG_printf("LOG:ESCs Armed!\n");
+    UARTDEBUG_printf("LOG:Calibrating ESCs\n");
+    ESC_calibrate();
+    UARTDEBUG_printf("LOG:ESCs calibrated!\n");
+
+    //3. Calibrate gyroscope and Accelerometer
+    int32_t accel_offset[3] = {0, 0, 0};
+    int32_t gyro_offset[3] = {0, 0, 0};
+
+    UARTDEBUG_printf("LOG:Calibrating gyroscope, DO NOT MOVE BOARD!\n");
+    MPU6050_calibrate_gyroscope(gyro_offset, 4);
+    UARTDEBUG_printf("LOG:Done calibrating gyroscope, offsets = %i, %i, %i\n", gyro_offset[0], gyro_offset[1], gyro_offset[2]);
+
+    UARTDEBUG_printf("LOG:Calibrating accelerometer, PLACE BOARD FLAT ON THE TABLE!\n");
+    MPU6050_calibrate_accelerometer(accel_offset, 4);
+    UARTDEBUG_printf("LOG:Done calibrating accelerometer, offsets = %i, %i, %i\n", accel_offset[0], accel_offset[1], accel_offset[2]);
+
+    //4. All done! Start control loop!
+    UARTDEBUG_printf("LOG: Everything is done! Drone control loop is about to start!\n");
+
+    //IMU and magnetometer data
     int16_t raw_accel[3];
     int16_t raw_gyro[3];
     int16_t raw_mag[3];
 
+    float accel[3];
+    float gyro[3];
+    float mag[3];
+
+    float accel_or[2] = {0.0, 0.0};
+    float mag_or = 0.0;
+
+    float orientation[3] = {0.0, 0.0, 0.0};
+
+    //GPS data
+    float location[3] = {0.0, 0.0, 0.0};
+    uint32_t satellites = 0;
+
+    //Pressure sensor data
+    float pressure = 0.0;
+    float altitude = 0.0;
+
+    //Timing data
     uint32_t start;
     float dt = 0.0;
     float t = 0.0;
-
-    //Setup queue
-    mqd_t mq;
-    struct mq_attr attr;
-
-    //Setup queue attributes
-    attr.mq_flags = 0;
-    attr.mq_maxmsg = TELEMETRY_QUEUE_SIZE;
-    attr.mq_msgsize = sizeof(telemetry_t);
-    attr.mq_curmsgs = 0;
-
-    //Create queue
-    mq = mq_open("TELEMETRY_QUEUE", O_CREAT | O_NONBLOCK | O_RDWR, 0644, &attr);
-
-    //Create telemetry thread
-    pthread_t tid;
-    pthread_attr_t      attrs;
-    struct sched_param  priParam;
-
-    /* Initialize the attributes structure with default values */
-    pthread_attr_init(&attrs);
-
-    /* Set priority, detach state, and stack size attributes */
-    priParam.sched_priority = 1;
-    pthread_attr_setschedparam(&attrs, &priParam);
-    pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
-    pthread_attr_setstacksize(&attrs, 256);
-
-    pthread_create(&tid, NULL, telemetry_thread, mq);
-
-    //Wait here until we can start drone
-    char c;
-    UARTDEBUG_gets(&c, 1, false);
 
     while(1)
     {
         start = millis();
 
+        //1. Obtain IMU data
         MPU6050_raw_accelerometer(raw_accel);
         MPU6050_raw_gyroscope(raw_gyro);
         QMC5883_raw_magnetometer(raw_mag);
 
-        //Create telemetry packet
-        uint32_t i;
-        for(i = 0; i < 3; i++)
-        {
-            packet.raw_accel[i] = raw_accel[i];
-            packet.raw_gyro[i] = raw_gyro[i];
-            packet.raw_mag[i] = raw_mag[i];
-        }
+        //a.Gyro raw reading, assuming +-250dps
+        raw_gyro[0] -= gyro_offset[0];
+        raw_gyro[1] -= gyro_offset[1];
+        raw_gyro[2] -= gyro_offset[2];
 
-        packet.dt = dt;
-        packet.time = t;
+        gyro[0] = ((float)raw_gyro[0])*0.00763;
+        gyro[1] = ((float)raw_gyro[1])*0.00763;
+        gyro[2] = ((float)raw_gyro[2])*0.00763;
 
-        //Queue telemetry packet
-        mq_send(mq, (char*)&packet, sizeof(telemetry_t), NULL);
+        //b.Accelerometer reading, assuming +-2g
+        raw_accel[0] -= accel_offset[0];
+        raw_accel[0] -= accel_offset[0];
+        raw_accel[0] -= accel_offset[0];
 
-        usleep(4000);
+        accel[0] = ((float)raw_accel[0])*0.00006103;
+        accel[1] = ((float)raw_accel[1])*0.00006103;
+        accel[2] = ((float)raw_accel[2])*0.00006103;
 
+        //c. Magnetometer reading, assuming +-8G
+        mag[0] = ((float)raw_mag[0])*0.0003333;
+        mag[1] = ((float)raw_mag[0])*0.0003333;
+        mag[2] = ((float)raw_mag[0])*0.0003333;
+
+        //2. Compute angle orientation based form accelerometer, gyroscope and magnetometer readings
+        //a. Gyroscope angles
+        orientation[0] += gyro[0]*dt;
+        orientation[1] += gyro[1]*dt;
+        orientation[2] += gyro[2]*dt;
+
+        //b. Accelerometer angles
+        float a_mag = sqrt((raw_accel[0]*raw_accel[0]) + (raw_accel[1]*raw_accel[1]) + (raw_accel[2]*raw_accel[2]));
+        accel_or[0] = asin((float)raw_accel[1]/a_mag) * 57.296;
+        accel_or[1] = asin((float)raw_accel[0]/a_mag) * 57.296;
+
+        //c.Magnetometer Angles
+
+
+        //3. Use a data fusion algorithm to obtain final angle orientations. This controller uses complimentary filters
+        orientation[0] = orientation[0] * 0.98 + accel_or[0] * 0.02;
+        orientation[1] = orientation[1] * 0.98 + accel_or[1] * 0.02;
+        //orientation[2] = orientation[2] * 0.98 + mag_or*0.02;
+
+        //4. PID controller
+
+        //5. Queue telemetry data
+        telemetry_queue(orientation, gyro, accel, mag, location, satellites, pressure, altitude, t, dt);
+
+        //usleep(2000);
         dt = (millis() - start)/1e3;
         t += dt;
-    }
-}
-
-void *telemetry_thread(void *arg0)
-{
-    mqd_t mq = (mqd_t)arg0;
-    telemetry_t packet;
-    int status;
-
-    while(1)
-    {
-        status = mq_receive(mq, (char*)&packet, sizeof(telemetry_t), NULL);
-        if(status > 0)
-        {
-            UARTDEBUG_printf("%f, %f, %i, %i, %i, %i, %i, %i, %i, %i, %i\n", packet.time, packet.dt, packet.raw_accel[0], packet.raw_accel[1], packet.raw_accel[2],
-                                                                                                     packet.raw_gyro[0], packet.raw_gyro[1], packet.raw_gyro[2],
-                                                                                                     packet.raw_mag[0], packet.raw_mag[1], packet.raw_mag[2]);
-        }
-
     }
 }
 

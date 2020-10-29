@@ -2,6 +2,8 @@
 #include "EasyHal/pwm_dev.h"
 #include "EasyHal/time_dev.h"
 
+#include <unistd.h>
+
 //RANGE: 12,000 (1ms) - 24,000 (2ms) for SMCLK @ 12MHz!
 void ESC_init(void)
 {
@@ -29,21 +31,21 @@ void ESC_arm(void)
     ESC_speed(ESC1, MIN_PWM_COUNT);
     ESC_speed(ESC2, MIN_PWM_COUNT);
     ESC_speed(ESC3, MIN_PWM_COUNT);
-    delay(10);
+    usleep(10000);
 
     //Go full speed - 10% duty cycle - count 24000
     ESC_speed(ESC0, MAX_PWM_COUNT);
     ESC_speed(ESC1, MAX_PWM_COUNT);
     ESC_speed(ESC2, MAX_PWM_COUNT);
     ESC_speed(ESC3, MAX_PWM_COUNT);
-    delay(10);
+    usleep(10000);
 
     //Go minimum speed - 5% duty cycle - count 12000
     ESC_speed(ESC0, MIN_PWM_COUNT);
     ESC_speed(ESC1, MIN_PWM_COUNT);
     ESC_speed(ESC2, MIN_PWM_COUNT);
     ESC_speed(ESC3, MIN_PWM_COUNT);
-    delay(5000);
+    sleep(5);
 }
 
 //RANGE: 12,000 (1ms) - 24,000 (2ms) for SMCLK @ 12MHz!
@@ -54,14 +56,14 @@ void ESC_calibrate(void)
     ESC_speed(ESC1, MAX_PWM_COUNT);
     ESC_speed(ESC2, MAX_PWM_COUNT);
     ESC_speed(ESC3, MAX_PWM_COUNT);
-    delay(4000);
+    sleep(4);
 
     //Minimum throttle
     ESC_speed(ESC0, MIN_PWM_COUNT);
     ESC_speed(ESC1, MIN_PWM_COUNT);
     ESC_speed(ESC2, MIN_PWM_COUNT);
     ESC_speed(ESC3, MIN_PWM_COUNT);
-    delay(4000);
+    sleep(4);
 }
 
 

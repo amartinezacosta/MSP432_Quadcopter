@@ -4,10 +4,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define UART_COUNT  2
+#define UART_COUNT  3
 
 #define UART0   0
 #define UART1   1
+#define UART2   2
 
 #define UART_BAUD_9600          9600
 #define UART_BAUD_115200        115200

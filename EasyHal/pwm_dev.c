@@ -34,9 +34,10 @@ void pwm_dev_init(uint32_t index)
     //Default duty = 0%
     PWM_Params params;
     PWM_Params_init(&params);
-    params.dutyValue = 0;
     params.periodUnits = PWM_PERIOD_COUNTS;
-    params.periodValue = 12000;
+    params.dutyUnits = PWM_DUTY_COUNTS;
+    params.periodValue = 240000;
+    params.dutyValue = 0;
 
     pwm_handles[index] = PWM_open(pwm_configs[index], &params);
     if(pwm_handles[index] == NULL)
@@ -50,14 +51,19 @@ void pwm_dev_init(uint32_t index)
     pwm_open[index] = true;
 }
 
+//TODO: This is not working! we need to fix it!
 void pwm_dev_period(uint32_t index, uint32_t period)
 {
-    PWM_setPeriod(pwm_handles[index], period);
+    PWM_Handle pwm = pwm_handles[index];
+
+    PWM_setPeriod(pwm, period);
 }
 
 void pwm_dev_duty(uint32_t index, uint32_t duty)
 {
-    PWM_setDuty(pwm_handles[index], duty);
+    PWM_Handle pwm = pwm_handles[index];
+
+    PWM_setDuty(pwm, duty);
 }
 
 #elif defined(MSP432P401R_DRIVERLIB_PWM)

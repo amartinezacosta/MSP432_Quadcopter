@@ -99,6 +99,52 @@ void MPU6050_raw_gyroscope(int16_t *gyro)
     gyro[2] = ((int16_t)raw_data[4] << 8) | raw_data[5];
 }
 
+void MPU6050_calibrate_accelerometer(int32_t *offsets, uint32_t dt)
+{
+    int16_t raw_accel[3];
+
+    //Calibrate accelerometer
+    uint32_t i;
+    for(i = 0; i < MPU6050_ACCEL_CALIBRATION; i++)
+    {
+        MPU6050_raw_accelerometer(raw_accel);
+
+        offsets[0] += raw_accel[0];
+        offsets[1] += raw_accel[1];
+        raw_accel[2] -= 16384;
+
+        offsets[2] += raw_accel[2];
+
+        delay(dt);
+    }
+
+    offsets[0] /= 200;
+    offsets[1] /= 200;
+    offsets[2] /= 200;
+}
+
+void MPU6050_calibrate_gyroscope(int32_t *offsets, uint32_t dt)
+{
+    int16_t raw_gyro[3];
+
+    //Calibrate gyroscope
+    uint32_t i;
+    for(i = 0; i < MPU6050_GYRO_CALIBRATION; i++)
+    {
+        MPU6050_raw_gyroscope(raw_gyro);
+
+        offsets[0] += raw_gyro[0];
+        offsets[1] += raw_gyro[1];
+        offsets[2] += raw_gyro[2];
+
+        delay(dt);
+    }
+
+    offsets[0] /= 2000;
+    offsets[1] /= 2000;
+    offsets[2] /= 2000;
+}
+
 /*LOW LEVEL MPU6050 COMMUNICATION--------------------------------------------------*/
 void MPU6050_write_byte(uint8_t reg, uint8_t value)
 {

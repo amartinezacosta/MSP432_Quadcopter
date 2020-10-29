@@ -382,6 +382,9 @@
 #define MPU6050_DMP_MEMORY_BANK_SIZE    256
 #define MPU6050_DMP_MEMORY_CHUNK_SIZE   16
 
+#define MPU6050_GYRO_CALIBRATION        2000
+#define MPU6050_ACCEL_CALIBRATION       200
+
 void MPU6050_init(uint8_t address);
 void MPU6050_set_clock(uint8_t source);
 void MPU6050_set_rate(uint8_t rate);
@@ -395,5 +398,8 @@ uint8_t MPU6050_who(void);
 void MPU6050_raw_temperature(int16_t *temp);
 void MPU6050_raw_accelerometer(int16_t *accel);
 void MPU6050_raw_gyroscope(int16_t *gyro);
+
+void MPU6050_calibrate_accelerometer(int32_t *offsets, uint32_t dt);
+void MPU6050_calibrate_gyroscope(int32_t *offsets, uint32_t dt);
 
 #endif /* MPU6050_H_ */

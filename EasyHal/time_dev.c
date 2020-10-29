@@ -49,12 +49,24 @@ void time_dev_init(void)
 
 void delay(uint32_t ms)
 {
-    usleep(1000*ms);
+    if(ms < 1000)
+    {
+        usleep(1000*ms);
+    }
+    else
+    {
+        sleep(ms/1000);
+    }
 }
 
 uint32_t millis(void)
 {
     return timer_millis;
+}
+
+uint32_t micros(void)
+{
+
 }
 
 void timer_dev_callback(Timer_Handle handle)
