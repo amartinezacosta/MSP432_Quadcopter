@@ -67,8 +67,10 @@ void telemetry_queue(float *angle, float *gyro, float *accel, float *mag, float 
 /*Telemetry packet protocol
  *
  * Every telemetry packet starts with a 'TEL:' heading and it is sent using ASCII characters and is terminated with a new line character '\n'
+ * SIZE = 20 strings of variable length
  *
- * TEL:pitch,roll,yaw,gyro_x,gyro_y,gyro_z,accel_x,accel_y,accel_z,gps_lat,gps_long,gps_elevation,gps_satellites,pressure,altitude,dt,time
+ *
+ * TEL:pitch,roll,yaw,gyro_x,gyro_y,gyro_z,accel_x,accel_y,accel_z,mag_x,mag_y,mag_z,gps_lat,gps_long,gps_elevation,gps_satellites,pressure,altitude,dt,time
  *
  * */
 void *telemetry_thread(void *arg0)
@@ -81,12 +83,13 @@ void *telemetry_thread(void *arg0)
         status = mq_receive(mq, (char*)&packet, sizeof(tel_packet_t), NULL);
         if(status > 0)
         {
-            UARTDEBUG_printf("TEL:%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%i,%f,%f,%f,%f\n", packet.angle[0], packet.angle[1], packet.angle[2],
-                                                                                         packet.gyro[0], packet.gyro[1], packet.gyro[2],
-                                                                                         packet.accel[0], packet.accel[2], packet.accel[2],
-                                                                                         packet.location[0], packet.location[1], packet.location[2],
-                                                                                         packet.satellites, packet.pressure, packet.altitude,
-                                                                                         packet.dt, packet.time);
+            UARTDEBUG_printf("TEL:%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%i,%f,%f,%f,%f\n", packet.angle[0], packet.angle[1], packet.angle[2],
+                                                                                                  packet.gyro[0], packet.gyro[1], packet.gyro[2],
+                                                                                                  packet.accel[0], packet.accel[1], packet.accel[2],
+                                                                                                  packet.mag[0], packet.mag[1], packet.mag[2],
+                                                                                                  packet.location[0], packet.location[1], packet.location[2],
+                                                                                                  packet.satellites, packet.pressure, packet.altitude,
+                                                                                                  packet.dt, packet.time);
         }
 
     }

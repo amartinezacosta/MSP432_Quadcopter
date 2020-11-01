@@ -12,7 +12,8 @@
 #include <unistd.h>
 #include <math.h>
 
-void *telemetry_thread(void *arg0);
+#define BAROMETRIC_PRESSURE_HPA     1026       //hPa
+#define DECLINATION_ANGLE           -0.26      //degrees
 
 void *mainThread(void *arg0)
 {
@@ -55,7 +56,7 @@ void *mainThread(void *arg0)
     UARTDEBUG_printf("LOG:Done calibrating accelerometer, offsets = %i, %i, %i\n", accel_offset[0], accel_offset[1], accel_offset[2]);
 
     //4. All done! Start control loop!
-    UARTDEBUG_printf("LOG: Everything is done! Drone control loop is about to start!\n");
+    UARTDEBUG_printf("LOG:Everything is done! Drone control loop is about to start!\n");
 
     //IMU and magnetometer data
     int16_t raw_accel[3];
@@ -84,14 +85,19 @@ void *mainThread(void *arg0)
     float dt = 0.0;
     float t = 0.0;
 
+    //TODO: hold here for commands?
+
     while(1)
     {
         start = millis();
 
-        //1. Obtain IMU data
+        //1. Obtain IMU data, GPS and Pressure data
         MPU6050_raw_accelerometer(raw_accel);
         MPU6050_raw_gyroscope(raw_gyro);
         QMC5883_raw_magnetometer(raw_mag);
+
+        pressure = BME280_pressure();
+        altitude = BME280_altitude(BAROMETRIC_PRESSURE_HPA);
 
         //a.Gyro raw reading, assuming +-250dps
         raw_gyro[0] -= gyro_offset[0];
@@ -113,8 +119,8 @@ void *mainThread(void *arg0)
 
         //c. Magnetometer reading, assuming +-8G
         mag[0] = ((float)raw_mag[0])*0.0003333;
-        mag[1] = ((float)raw_mag[0])*0.0003333;
-        mag[2] = ((float)raw_mag[0])*0.0003333;
+        mag[1] = ((float)raw_mag[1])*0.0003333;
+        mag[2] = ((float)raw_mag[2])*0.0003333;
 
         //2. Compute angle orientation based form accelerometer, gyroscope and magnetometer readings
         //a. Gyroscope angles
@@ -128,12 +134,19 @@ void *mainThread(void *arg0)
         accel_or[1] = asin((float)raw_accel[0]/a_mag) * 57.296;
 
         //c.Magnetometer Angles
+        float pitch_rads = orientation[0] * 0.0174533;
+        float roll_rads = orientation[1] * -0.0174533;
 
+        float xh = ((float)mag[0])*cos(pitch_rads) + ((float)mag[1])*sin(roll_rads)*sin(pitch_rads) - ((float)mag[2])*cos(roll_rads)*sin(pitch_rads);
+        float yh = ((float)mag[1])*cos(roll_rads) + ((float)mag[2])*sin(roll_rads);
+        mag_or = atan2(yh, xh) * 57.296;
+
+        mag_or += DECLINATION_ANGLE;
 
         //3. Use a data fusion algorithm to obtain final angle orientations. This controller uses complimentary filters
         orientation[0] = orientation[0] * 0.98 + accel_or[0] * 0.02;
         orientation[1] = orientation[1] * 0.98 + accel_or[1] * 0.02;
-        //orientation[2] = orientation[2] * 0.98 + mag_or*0.02;
+        orientation[2] = mag_or;//orientation[2] * 0.5 + mag_or * 0.5;
 
         //4. PID controller
 
