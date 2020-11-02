@@ -15,16 +15,19 @@ uint32_t GPS_read(char *gps_data, uint32_t length)
     //Read until new line received
     while(1)
     {
+        //Read character
         uart_dev_read(UART2, (uint8_t*)&c, 1);
 
-       /*put a '\n' and '\r' if it fits on the buffer*/
        if((c == '\n') || (c == '\r'))
        {
-           //Save carriage return and newline
+           //read carriage return
+           uart_dev_read(UART2, (uint8_t*)&c, 1);
+
+           //Process GPS packet data
+
            if((i + 3) < length)
            {
                gps_data[i++] = c;
-               uart_dev_read(UART2, (uint8_t*)&c, 1);
                gps_data[i++] = 0;
            }
 

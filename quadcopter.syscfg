@@ -10,6 +10,8 @@
  */
 const DriverLib = scripting.addModule("/ti/devices/DriverLib");
 const Board     = scripting.addModule("/ti/drivers/Board");
+const Capture   = scripting.addModule("/ti/drivers/Capture", {}, false);
+const Capture1  = Capture.addInstance();
 const GPIO      = scripting.addModule("/ti/drivers/GPIO", {}, false);
 const GPIO1     = GPIO.addInstance();
 const GPIO2     = GPIO.addInstance();
@@ -33,6 +35,11 @@ const UART3     = UART.addInstance();
 /**
  * Write custom configuration values to the imported modules.
  */
+Capture1.$name                    = "CONFIG_CAPTURE_0";
+Capture1.timer.$name              = "MyTIMER_A1";
+Capture1.timer.$assign            = "Timer_A2";
+Capture1.timer.capturePin.$assign = "boosterpack.35";
+
 GPIO1.$name           = "CONFIG_GPIO_0";
 GPIO1.mode            = "Output";
 GPIO1.gpioPin.$assign = "boosterpack.24";

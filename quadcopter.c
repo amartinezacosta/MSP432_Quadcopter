@@ -4,13 +4,13 @@
 #include "ESC.h"
 #include "UARTDEBUG.h"
 #include "telemetry.h"
-
 #include "EasyHal/time_dev.h"
 
 #include <mqueue.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <math.h>
+#include <RC.h>
 
 #define BAROMETRIC_PRESSURE_HPA     1026       //hPa
 #define DECLINATION_ANGLE           -0.26      //degrees
@@ -27,8 +27,9 @@ void *mainThread(void *arg0)
     BME280_init();
     QMC5883_init();
     ESC_init();
+    PPM_init();
 
-    UARTDEBUG_printf("LOG:Hardware devices initialized! 1.MPU6050 2.BME280 3.QMC5883 4.ublox GPS\n");
+    UARTDEBUG_printf("LOG:Hardware devices initialized! 1.MPU6050 2.BME280 3.QMC5883 4.ublox GPS 5.RC\n");
 
     //2. Initialize telemetry
     UARTDEBUG_printf("LOG:Initializing telemetry thread and queue\n");
@@ -85,16 +86,20 @@ void *mainThread(void *arg0)
     float dt = 0.0;
     float t = 0.0;
 
+    //RC data
+    uint32_t channels[8];
+
     //TODO: hold here for commands?
 
     while(1)
     {
         start = millis();
 
-        //1. Obtain IMU data, GPS and Pressure data
+        //1. Obtain IMU data, GPS, Pressure data and RC data
         MPU6050_raw_accelerometer(raw_accel);
         MPU6050_raw_gyroscope(raw_gyro);
         QMC5883_raw_magnetometer(raw_mag);
+        PPM_channels(channels);
 
         pressure = BME280_pressure();
         altitude = BME280_altitude(BAROMETRIC_PRESSURE_HPA);
@@ -146,7 +151,7 @@ void *mainThread(void *arg0)
         //3. Use a data fusion algorithm to obtain final angle orientations. This controller uses complimentary filters
         orientation[0] = orientation[0] * 0.98 + accel_or[0] * 0.02;
         orientation[1] = orientation[1] * 0.98 + accel_or[1] * 0.02;
-        orientation[2] = mag_or;//orientation[2] * 0.5 + mag_or * 0.5;
+        orientation[2] = mag_or;                                        //orientation[2] * 0.5 + mag_or * 0.5;
 
         //4. PID controller
 

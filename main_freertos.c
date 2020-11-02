@@ -52,6 +52,7 @@
 #include <ti/drivers/I2C.h>
 #include <ti/drivers/PWM.h>
 #include <ti/drivers/Timer.h>
+#include <ti/drivers/Capture.h>
 
 extern void *mainThread(void *arg0);
 
@@ -79,6 +80,7 @@ int main(void)
     I2C_init();
     PWM_init();
     Timer_init();
+    Capture_init();
 
     /* Initialize the attributes structure with default values */
     pthread_attr_init(&attrs);

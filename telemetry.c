@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 #include <mqueue.h>
+#include <unistd.h>
 
 void *telemetry_thread(void *arg0);
 
@@ -91,6 +92,8 @@ void *telemetry_thread(void *arg0)
                                                                                                   packet.satellites, packet.pressure, packet.altitude,
                                                                                                   packet.dt, packet.time);
         }
+
+        usleep(1000);
 
     }
 }
