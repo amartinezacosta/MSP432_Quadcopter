@@ -26,19 +26,21 @@ void ESC_speed(uint32_t esc, uint32_t duty)
 void ESC_arm(void)
 {
     //Arm all 4 motors
+    sleep(1);
+
     //Go minimum speed- 5% duty cycle - count 12000
     ESC_speed(ESC0, MIN_PWM_COUNT);
     ESC_speed(ESC1, MIN_PWM_COUNT);
     ESC_speed(ESC2, MIN_PWM_COUNT);
     ESC_speed(ESC3, MIN_PWM_COUNT);
-    usleep(10000);
+    sleep(1);
 
     //Go full speed - 10% duty cycle - count 24000
     ESC_speed(ESC0, MAX_PWM_COUNT);
     ESC_speed(ESC1, MAX_PWM_COUNT);
     ESC_speed(ESC2, MAX_PWM_COUNT);
     ESC_speed(ESC3, MAX_PWM_COUNT);
-    usleep(10000);
+    sleep(1);
 
     //Go minimum speed - 5% duty cycle - count 12000
     ESC_speed(ESC0, MIN_PWM_COUNT);

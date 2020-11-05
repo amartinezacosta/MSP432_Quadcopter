@@ -37,7 +37,7 @@ void pwm_dev_init(uint32_t index)
     params.periodUnits = PWM_PERIOD_COUNTS;
     params.dutyUnits = PWM_DUTY_COUNTS;
     params.periodValue = 240000;
-    params.dutyValue = 0;
+    params.dutyValue = 12000;
 
     pwm_handles[index] = PWM_open(pwm_configs[index], &params);
     if(pwm_handles[index] == NULL)

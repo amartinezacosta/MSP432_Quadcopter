@@ -1,16 +1,19 @@
 #include "MPU6050.h"
 #include "QMC5883.h"
 #include "BME280.h"
+#include "GPS.h"
 #include "ESC.h"
+#include "RC.h"
+
 #include "UARTDEBUG.h"
 #include "telemetry.h"
+
 #include "EasyHal/time_dev.h"
 
 #include <mqueue.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <math.h>
-#include <RC.h>
 
 #define BAROMETRIC_PRESSURE_HPA     1026       //hPa
 #define DECLINATION_ANGLE           -0.26      //degrees
@@ -28,6 +31,7 @@ void *mainThread(void *arg0)
     QMC5883_init();
     ESC_init();
     PPM_init();
+    GPS_init();
 
     UARTDEBUG_printf("LOG:Hardware devices initialized! 1.MPU6050 2.BME280 3.QMC5883 4.ublox GPS 5.RC\n");
 
@@ -38,10 +42,10 @@ void *mainThread(void *arg0)
 
     //2. Arm and Calibrate ESCs
     UARTDEBUG_printf("LOG:Arming ESCs\n");
-    ESC_arm();
+    //ESC_arm();
     UARTDEBUG_printf("LOG:ESCs Armed!\n");
     UARTDEBUG_printf("LOG:Calibrating ESCs\n");
-    ESC_calibrate();
+    //ESC_calibrate();
     UARTDEBUG_printf("LOG:ESCs calibrated!\n");
 
     //3. Calibrate gyroscope and Accelerometer
@@ -49,11 +53,11 @@ void *mainThread(void *arg0)
     int32_t gyro_offset[3] = {0, 0, 0};
 
     UARTDEBUG_printf("LOG:Calibrating gyroscope, DO NOT MOVE BOARD!\n");
-    MPU6050_calibrate_gyroscope(gyro_offset, 4);
+    //MPU6050_calibrate_gyroscope(gyro_offset, 4);
     UARTDEBUG_printf("LOG:Done calibrating gyroscope, offsets = %i, %i, %i\n", gyro_offset[0], gyro_offset[1], gyro_offset[2]);
 
     UARTDEBUG_printf("LOG:Calibrating accelerometer, PLACE BOARD FLAT ON THE TABLE!\n");
-    MPU6050_calibrate_accelerometer(accel_offset, 4);
+    //MPU6050_calibrate_accelerometer(accel_offset, 4);
     UARTDEBUG_printf("LOG:Done calibrating accelerometer, offsets = %i, %i, %i\n", accel_offset[0], accel_offset[1], accel_offset[2]);
 
     //4. All done! Start control loop!
@@ -74,7 +78,7 @@ void *mainThread(void *arg0)
     float orientation[3] = {0.0, 0.0, 0.0};
 
     //GPS data
-    float location[3] = {0.0, 0.0, 0.0};
+    float location[2] = {0.0, 0.0};
     uint32_t satellites = 0;
 
     //Pressure sensor data
@@ -90,7 +94,6 @@ void *mainThread(void *arg0)
     uint32_t channels[8];
 
     //TODO: hold here for commands?
-
     while(1)
     {
         start = millis();
@@ -100,6 +103,7 @@ void *mainThread(void *arg0)
         MPU6050_raw_gyroscope(raw_gyro);
         QMC5883_raw_magnetometer(raw_mag);
         PPM_channels(channels);
+        GPS_read(location, &satellites);
 
         pressure = BME280_pressure();
         altitude = BME280_altitude(BAROMETRIC_PRESSURE_HPA);
@@ -151,12 +155,15 @@ void *mainThread(void *arg0)
         //3. Use a data fusion algorithm to obtain final angle orientations. This controller uses complimentary filters
         orientation[0] = orientation[0] * 0.98 + accel_or[0] * 0.02;
         orientation[1] = orientation[1] * 0.98 + accel_or[1] * 0.02;
-        orientation[2] = mag_or;                                        //orientation[2] * 0.5 + mag_or * 0.5;
+        orientation[2] = mag_or; //orientation[2] * 0.5 + mag_or * 0.5;
 
         //4. PID controller
 
-        //5. Queue telemetry data
-        telemetry_queue(orientation, gyro, accel, mag, location, satellites, pressure, altitude, t, dt);
+        //5. Send telemetry data
+        telemetry_send(orientation, gyro, accel, mag, location, satellites, pressure, altitude, t, dt);
+
+        //Debug data here
+        //UARTDEBUG_printf("%f,%c,%f,%c,%i\n\r", location[0], direction[0], location[1], direction[1], satellites);
 
         //usleep(2000);
         dt = (millis() - start)/1e3;

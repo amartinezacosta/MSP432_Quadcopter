@@ -22,24 +22,26 @@
 
 bool uart_open[UART_COUNT] = {false, false};
 const uint32_t uart_configs[UART_COUNT] = {CONFIG_UART_0, CONFIG_UART_1, CONFIG_UART_2};
+
 UART_Handle UART_handles[UART_COUNT];
+UART_Params UART_params[UART_COUNT];
 
 void uart_dev_init(uint32_t index, uint32_t baudrate)
 {
     if(uart_open[index]) return;
 
-    UART_Params params;
+    UART_Params *params = &UART_params[index];
 
-    UART_Params_init(&params);
-    params.baudRate = baudrate;
-    params.readMode = UART_MODE_BLOCKING;
-    params.writeMode = UART_MODE_BLOCKING;
-    params.readTimeout = UART_WAIT_FOREVER;
-    params.writeTimeout = UART_WAIT_FOREVER;
-    params.readEcho = UART_ECHO_OFF;
-    params.dataLength = UART_LEN_8;
+    UART_Params_init(params);
+    params->baudRate = baudrate;
+    params->readMode = UART_MODE_BLOCKING;
+    params->writeMode = UART_MODE_BLOCKING;
+    params->readTimeout = UART_WAIT_FOREVER;
+    params->writeTimeout = UART_WAIT_FOREVER;
+    params->readEcho = UART_ECHO_OFF;
+    params->dataLength = UART_LEN_8;
 
-    UART_handles[index] = UART_open(uart_configs[index], &params);
+    UART_handles[index] = UART_open(uart_configs[index], params);
     if (UART_handles[index] == NULL)
     {
         while(1);
@@ -59,6 +61,7 @@ void uart_dev_read(uint32_t index, uint8_t *data, uint32_t size)
     UART_Handle handle = UART_handles[index];
     UART_read(handle, data, size);
 }
+
 
 #elif defined(MSP432P401R_DRIVERLIB_UART)
 

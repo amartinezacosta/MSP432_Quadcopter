@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+#define TELEMETRY_BUFFER_SIZE   512
+
+/*
 #define TELEMETRY_QUEUE_SIZE    10
 
 typedef struct
@@ -23,9 +26,10 @@ typedef struct
     float dt;
     float time;
 }tel_packet_t;
-
+*/
 
 void telemetry_init(void);
-void telemetry_queue(float *angle, float *gyro, float *accel, float *mag, float *location, uint32_t satellites, float pressure, float altitude, float dt, float t);
+//void telemetry_queue(float *angle, float *gyro, float *accel, float *mag, float *location, uint32_t satellites, float pressure, float altitude, float dt, float t);
+void telemetry_send(float *angle, float *gyro, float *accel, float *mag, float *location, uint32_t satellites, float pressure, float altitude, float dt, float t);
 
 #endif /* TELEMETRY_H_ */
