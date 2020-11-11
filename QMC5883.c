@@ -61,6 +61,21 @@ void QMC5883_raw_magnetometer(int16_t *mag)
     mag[2] = ((int16_t)(raw_data[5] << 8)) | raw_data[4];
 }
 
+void QMC5883_magnetometer(float *magnetometer, int32_t *offsets)
+{
+    int16_t raw_mag[3];
+    QMC5883_raw_magnetometer(raw_mag);
+
+    //raw_mag[0] -= offsets[0];
+    //raw_mag[0] -= offsets[0];
+    //raw_mag[0] -= offsets[0];
+
+    //c. Magnetometer reading, assuming +-8G
+    magnetometer[0] = ((float)raw_mag[0])*0.0003333;
+    magnetometer[1] = ((float)raw_mag[1])*0.0003333;
+    magnetometer[2] = ((float)raw_mag[2])*0.0003333;
+}
+
 /*LOW LEVEL QMC5883 COMMUNICATION-----------------------------------------------------*/
 
 void QMC5883_write_byte(uint8_t reg, uint8_t value)

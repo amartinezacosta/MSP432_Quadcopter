@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define BAROMETRIC_PRESSURE_HPA     1026       //hPa - El Paso Tx
+
 #define BME280_ADDRESS              0x77
 #define BME280_ADDRESS_ALTERNATE    0x76
 

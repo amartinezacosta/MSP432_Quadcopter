@@ -20,9 +20,11 @@ void MPU6050_init(uint8_t address)
     MPU6050_address = address;
 
     MPU6050_set_clock(MPU6050_CLOCK_PLL_XGYRO);
-    MPU6050_gyroscope_range(MPU6050_GYRO_FS_250);
-    MPU6050_accelerometer_range(MPU6050_ACCEL_FS_2);
+    MPU6050_gyroscope_range(MPU6050_GYRO_FS_500);
+    MPU6050_accelerometer_range(MPU6050_ACCEL_FS_8);
     MPU6050_sleep(false);
+
+    delay(10);
 }
 
 void MPU6050_set_clock(uint8_t source)
@@ -111,7 +113,7 @@ void MPU6050_calibrate_accelerometer(int32_t *offsets, uint32_t dt)
 
         offsets[0] += raw_accel[0];
         offsets[1] += raw_accel[1];
-        raw_accel[2] -= 16384;
+        raw_accel[2] -= 4096;
 
         offsets[2] += raw_accel[2];
 
@@ -143,6 +145,36 @@ void MPU6050_calibrate_gyroscope(int32_t *offsets, uint32_t dt)
     offsets[0] /= 2000;
     offsets[1] /= 2000;
     offsets[2] /= 2000;
+}
+
+void MPU6050_gyroscope(float *gyrosocope, int32_t *offsets)
+{
+    int16_t raw_gyro[3];
+    MPU6050_raw_gyroscope(raw_gyro);
+
+    raw_gyro[0] -= offsets[0];
+    raw_gyro[1] -= offsets[1];
+    raw_gyro[2] -= offsets[2];
+
+    //Assuming +-250dps
+    gyrosocope[0] = ((float)raw_gyro[0])*0.01526;
+    gyrosocope[1] = ((float)raw_gyro[1])*0.01526;
+    gyrosocope[2] = ((float)raw_gyro[2])*0.01526;
+}
+
+void MPU6050_accelerometer(float *accelerometer, int32_t *offsets)
+{
+    int16_t raw_accel[3];
+    MPU6050_raw_accelerometer(raw_accel);
+
+    raw_accel[0] -= offsets[0];
+    raw_accel[1] -= offsets[1];
+    raw_accel[2] -= offsets[2];
+
+    //Accelerometer reading, assuming +-2g
+    accelerometer[0] = ((float)raw_accel[0])*0.00024414;
+    accelerometer[1] = ((float)raw_accel[1])*0.00024414;
+    accelerometer[2] = ((float)raw_accel[2])*0.00024414;
 }
 
 /*LOW LEVEL MPU6050 COMMUNICATION--------------------------------------------------*/

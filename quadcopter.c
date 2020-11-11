@@ -10,162 +10,128 @@
 
 #include "EasyHal/time_dev.h"
 
-#include <mqueue.h>
-#include <pthread.h>
-#include <unistd.h>
 #include <math.h>
 
-#define BAROMETRIC_PRESSURE_HPA     1026       //hPa
-#define DECLINATION_ANGLE           -0.26      //degrees
+#include <ti/drivers/GPIO.h>
+#include "ti_drivers_config.h"
+
+float compass_heading(float mx, float my, float mz, float *pitch, float *roll)
+{
+    float pitch_rad = -*pitch*0.0174533;
+    float roll_rad = -*roll*0.0174533;
+
+    float hx = mx*cos(pitch_rad) + my*sin(roll_rad)*sin(pitch_rad) - mz*cos(roll_rad)*sin(pitch_rad);
+    float hy = my*cos(roll_rad) + mz*sin(roll_rad);
+
+    float heading = atan2(hy, hx)*57.296;
+
+    if(hy < 0 )
+    {
+        heading = 180 + (180 + atan2(hy, hx)*57.296);
+    }
+    else
+    {
+        heading = atan2(hy, hx)*57.296;
+    }
+
+    return heading;
+}
+
+void accelerometer_angles(float ax, float ay, float az, float *pitch, float *roll)
+{
+    float accel_magnitude = sqrt(ax*ax + ay*ay + az*az);
+    *pitch = asin(ay/accel_magnitude)*57.296;
+    *roll = -asin(ax/accel_magnitude)*57.296;
+}
+
+void gyroscope_angles(float gx, float gy, float gz, float *pitch, float *roll, float *yaw, float dt)
+{
+    *pitch += gx*dt;
+    *roll += gy*dt;
+    *yaw += gz*dt;
+
+    *pitch -= *roll*sin(gz*0.0174533*dt);
+    *roll +=  *pitch*sin(gz*0.0174533*dt);
+}
 
 void *mainThread(void *arg0)
 {
-    time_dev_init();
-    UARTDEBUG_init(115200);
-
-    //1. Initialize hardware devices and sensors
-    UARTDEBUG_printf("LOG:****UTEP Senior Project II Drone V1.0****\n");
-    UARTDEBUG_printf("LOG:Initializing hardware devices\n");
-    MPU6050_init(MPU6050_DEFAULT_ADDRESS);
-    BME280_init();
-    QMC5883_init();
-    ESC_init();
-    PPM_init();
-    GPS_init();
-
-    UARTDEBUG_printf("LOG:Hardware devices initialized! 1.MPU6050 2.BME280 3.QMC5883 4.ublox GPS 5.RC\n");
-
-    //2. Initialize telemetry
-    UARTDEBUG_printf("LOG:Initializing telemetry thread and queue\n");
-    telemetry_init();
-    UARTDEBUG_printf("LOG:telemetry thread running\n");
-
-    //2. Arm and Calibrate ESCs
-    UARTDEBUG_printf("LOG:Arming ESCs\n");
-    //ESC_arm();
-    UARTDEBUG_printf("LOG:ESCs Armed!\n");
-    UARTDEBUG_printf("LOG:Calibrating ESCs\n");
-    //ESC_calibrate();
-    UARTDEBUG_printf("LOG:ESCs calibrated!\n");
-
-    //3. Calibrate gyroscope and Accelerometer
-    int32_t accel_offset[3] = {0, 0, 0};
+    //Calibration data
     int32_t gyro_offset[3] = {0, 0, 0};
+    int32_t accel_offset[3] = {0, 0, 0};
+    int32_t mag_offset[3] = {0, 0, 0};
 
-    UARTDEBUG_printf("LOG:Calibrating gyroscope, DO NOT MOVE BOARD!\n");
-    //MPU6050_calibrate_gyroscope(gyro_offset, 4);
-    UARTDEBUG_printf("LOG:Done calibrating gyroscope, offsets = %i, %i, %i\n", gyro_offset[0], gyro_offset[1], gyro_offset[2]);
-
-    UARTDEBUG_printf("LOG:Calibrating accelerometer, PLACE BOARD FLAT ON THE TABLE!\n");
-    //MPU6050_calibrate_accelerometer(accel_offset, 4);
-    UARTDEBUG_printf("LOG:Done calibrating accelerometer, offsets = %i, %i, %i\n", accel_offset[0], accel_offset[1], accel_offset[2]);
-
-    //4. All done! Start control loop!
-    UARTDEBUG_printf("LOG:Everything is done! Drone control loop is about to start!\n");
-
-    //IMU and magnetometer data
-    int16_t raw_accel[3];
-    int16_t raw_gyro[3];
-    int16_t raw_mag[3];
-
-    float accel[3];
+    //Gyrosocope, accelerometer and magnetometer data
     float gyro[3];
+    float accel[3];
     float mag[3];
-
-    float accel_or[2] = {0.0, 0.0};
-    float mag_or = 0.0;
-
-    float orientation[3] = {0.0, 0.0, 0.0};
-
-    //GPS data
-    float location[2] = {0.0, 0.0};
-    uint32_t satellites = 0;
-
-    //Pressure sensor data
-    float pressure = 0.0;
-    float altitude = 0.0;
+    float accel_pitch, accel_roll;
+    float mag_yaw;
+    float pitch = 0.0, roll = 0.0, yaw = 0.0;
 
     //Timing data
     uint32_t start;
     float dt = 0.0;
     float t = 0.0;
 
-    //RC data
-    uint32_t channels[8];
+    //0. For timing and debugging
+    time_dev_init();
+    UARTDEBUG_init(115200);
 
-    //TODO: hold here for commands?
+    //Wait for everything to settle
+    delay(100);
+
+    GPIO_write(CONFIG_GPIO_0, 1);
+    GPIO_write(CONFIG_GPIO_1, 1);
+
+    //1. Initialize hardware devices and sensors
+    MPU6050_init(MPU6050_DEFAULT_ADDRESS);
+    QMC5883_init();
+
+    //2. Calibrate Sensors
+    MPU6050_calibrate_gyroscope(gyro_offset, 4);
+    MPU6050_calibrate_accelerometer(accel_offset, 4);
+
+    //3. Use accelerometer and magnetometer to set initial frame of reference
+    MPU6050_accelerometer(accel, accel_offset);
+    QMC5883_magnetometer(mag, mag_offset);
+
+    accelerometer_angles(accel[0], accel[1], accel[2], &accel_pitch, &accel_roll);
+    mag_yaw = compass_heading(mag[0], mag[1], mag[2], &pitch, &roll);
+
+    pitch = accel_pitch;
+    roll = accel_roll;
+    yaw = mag_yaw;
+
+    GPIO_write(CONFIG_GPIO_0, 0);
+    GPIO_write(CONFIG_GPIO_1, 0);
+
     while(1)
     {
         start = millis();
 
         //1. Obtain IMU data, GPS, Pressure data and RC data
-        MPU6050_raw_accelerometer(raw_accel);
-        MPU6050_raw_gyroscope(raw_gyro);
-        QMC5883_raw_magnetometer(raw_mag);
-        PPM_channels(channels);
-        GPS_read(location, &satellites);
+        MPU6050_gyroscope(gyro, gyro_offset);
+        MPU6050_accelerometer(accel, accel_offset);
+        QMC5883_magnetometer(mag, mag_offset);
 
-        pressure = BME280_pressure();
-        altitude = BME280_altitude(BAROMETRIC_PRESSURE_HPA);
+        //a. Compute angle using gyro data
+        gyroscope_angles(gyro[0], gyro[1], gyro[2], &pitch, &roll, &yaw, dt);
 
-        //a.Gyro raw reading, assuming +-250dps
-        raw_gyro[0] -= gyro_offset[0];
-        raw_gyro[1] -= gyro_offset[1];
-        raw_gyro[2] -= gyro_offset[2];
+        //b. Compute angle using accelerometer
+        accelerometer_angles(accel[0], accel[1], accel[2], &accel_pitch, &accel_roll);
 
-        gyro[0] = ((float)raw_gyro[0])*0.00763;
-        gyro[1] = ((float)raw_gyro[1])*0.00763;
-        gyro[2] = ((float)raw_gyro[2])*0.00763;
+        //c. Yaw angle from compass
+        mag_yaw = compass_heading(mag[0], mag[1], mag[2], &pitch, &roll);
 
-        //b.Accelerometer reading, assuming +-2g
-        raw_accel[0] -= accel_offset[0];
-        raw_accel[0] -= accel_offset[0];
-        raw_accel[0] -= accel_offset[0];
+        //c. complementary filter
+        pitch = 0.98 * pitch + 0.02 * accel_pitch;
+        roll = 0.98 * roll + 0.02 * accel_roll;
+        yaw = 0.98 * yaw + 0.02 * mag_yaw;
 
-        accel[0] = ((float)raw_accel[0])*0.00006103;
-        accel[1] = ((float)raw_accel[1])*0.00006103;
-        accel[2] = ((float)raw_accel[2])*0.00006103;
+        //6. Debug data here
+        UARTDEBUG_printf("%f,%f,%f,%f\n", pitch, roll, yaw, dt);
 
-        //c. Magnetometer reading, assuming +-8G
-        mag[0] = ((float)raw_mag[0])*0.0003333;
-        mag[1] = ((float)raw_mag[1])*0.0003333;
-        mag[2] = ((float)raw_mag[2])*0.0003333;
-
-        //2. Compute angle orientation based form accelerometer, gyroscope and magnetometer readings
-        //a. Gyroscope angles
-        orientation[0] += gyro[0]*dt;
-        orientation[1] += gyro[1]*dt;
-        orientation[2] += gyro[2]*dt;
-
-        //b. Accelerometer angles
-        float a_mag = sqrt((raw_accel[0]*raw_accel[0]) + (raw_accel[1]*raw_accel[1]) + (raw_accel[2]*raw_accel[2]));
-        accel_or[0] = asin((float)raw_accel[1]/a_mag) * 57.296;
-        accel_or[1] = asin((float)raw_accel[0]/a_mag) * 57.296;
-
-        //c.Magnetometer Angles
-        float pitch_rads = orientation[0] * 0.0174533;
-        float roll_rads = orientation[1] * -0.0174533;
-
-        float xh = ((float)mag[0])*cos(pitch_rads) + ((float)mag[1])*sin(roll_rads)*sin(pitch_rads) - ((float)mag[2])*cos(roll_rads)*sin(pitch_rads);
-        float yh = ((float)mag[1])*cos(roll_rads) + ((float)mag[2])*sin(roll_rads);
-        mag_or = atan2(yh, xh) * 57.296;
-
-        mag_or += DECLINATION_ANGLE;
-
-        //3. Use a data fusion algorithm to obtain final angle orientations. This controller uses complimentary filters
-        orientation[0] = orientation[0] * 0.98 + accel_or[0] * 0.02;
-        orientation[1] = orientation[1] * 0.98 + accel_or[1] * 0.02;
-        orientation[2] = mag_or; //orientation[2] * 0.5 + mag_or * 0.5;
-
-        //4. PID controller
-
-        //5. Send telemetry data
-        telemetry_send(orientation, gyro, accel, mag, location, satellites, pressure, altitude, t, dt);
-
-        //Debug data here
-        //UARTDEBUG_printf("%f,%c,%f,%c,%i\n\r", location[0], direction[0], location[1], direction[1], satellites);
-
-        //usleep(2000);
         dt = (millis() - start)/1e3;
         t += dt;
     }

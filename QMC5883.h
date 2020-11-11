@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#define DECLINATION_ANGLE               -0.26      //degrees - El Paso Tx
+
 #define HMC5883L_ADDRESS                0x1E
 #define QMC5883_ADDRESS                 0x0D
 
@@ -82,5 +84,7 @@ void QMC5883_set_rate(uint8_t rate);
 void QMC5883_set_measurement(uint8_t mode);
 void QMC5883_set_range(uint8_t range);
 void QMC5883_raw_magnetometer(int16_t *mag);
+
+void QMC5883_magnetometer(float *magnetometer, int32_t *offsets);
 
 #endif /* QMC5883_H_ */

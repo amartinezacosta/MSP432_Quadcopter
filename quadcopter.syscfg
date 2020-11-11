@@ -15,7 +15,6 @@ const Capture1  = Capture.addInstance();
 const GPIO      = scripting.addModule("/ti/drivers/GPIO", {}, false);
 const GPIO1     = GPIO.addInstance();
 const GPIO2     = GPIO.addInstance();
-const GPIO3     = GPIO.addInstance();
 const I2C       = scripting.addModule("/ti/drivers/I2C");
 const I2C1      = I2C.addInstance();
 const PWM       = scripting.addModule("/ti/drivers/PWM", {}, false);
@@ -46,12 +45,7 @@ GPIO1.gpioPin.$assign = "boosterpack.24";
 
 GPIO2.$name           = "CONFIG_GPIO_1";
 GPIO2.mode            = "Output";
-GPIO2.gpioPin.$assign = "boosterpack.5";
-
-GPIO3.$name            = "CONFIG_GPIO_2";
-GPIO3.interruptTrigger = "Rising Edge";
-GPIO3.pull             = "Pull Down";
-GPIO3.gpioPin.$assign  = "boosterpack.25";
+GPIO2.gpioPin.$assign = "boosterpack.25";
 
 I2C1.$name              = "CONFIG_I2C_0";
 I2C1.i2c.$name          = "MyI2C1";

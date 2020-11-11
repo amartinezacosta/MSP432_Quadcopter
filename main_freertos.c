@@ -48,6 +48,7 @@
 
 /* Driver configuration */
 #include <ti/drivers/Board.h>
+#include <ti/drivers/GPIO.h>
 #include <ti/drivers/UART.h>
 #include <ti/drivers/I2C.h>
 #include <ti/drivers/PWM.h>
@@ -76,6 +77,7 @@ int main(void)
 
     /* Call driver init functions */
     Board_init();
+    GPIO_init();
     UART_init();
     I2C_init();
     PWM_init();

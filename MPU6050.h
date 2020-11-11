@@ -402,4 +402,7 @@ void MPU6050_raw_gyroscope(int16_t *gyro);
 void MPU6050_calibrate_accelerometer(int32_t *offsets, uint32_t dt);
 void MPU6050_calibrate_gyroscope(int32_t *offsets, uint32_t dt);
 
+void MPU6050_gyroscope(float *gyrosocope, int32_t *offsets);
+void MPU6050_accelerometer(float *accelerometer, int32_t *offsets);
+
 #endif /* MPU6050_H_ */
