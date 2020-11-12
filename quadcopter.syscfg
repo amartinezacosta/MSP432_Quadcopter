@@ -80,10 +80,9 @@ Power.performanceLevel0.$name = "ti_drivers_power_PowerMSP432PerfLevels3";
 
 RTOS.name = "FreeRTOS";
 
-Timer1.$name         = "CONFIG_TIMER_0";
-Timer1.timerType     = "32 Bits";
-Timer1.timer.$name   = "MyTIMER321";
-Timer1.timer.$assign = "TIMER32_0";
+Timer1.$name       = "CONFIG_TIMER_0";
+Timer1.clockSource = "SMCLK";
+Timer1.timer.$name = "MyTIMER_A1";
 
 UART1.$name      = "CONFIG_UART_0";
 UART1.$hardware  = system.deviceData.board.components.XDS110UART;
@@ -108,6 +107,7 @@ UART3.uart.rxPin.$assign = "P2.2.GPIO/EUSCI_A1_UART.RXD/EUSCI_A1_SPI.SOMI";
  * version of the tool will not impact the pinmux you originally saw.  These lines can be completely deleted in order to
  * re-solve from scratch.
  */
+Timer1.timer.$suggestSolution     = "Timer_A1";
 UART1.uart.$suggestSolution       = "EUSCI_A0";
 UART1.uart.txPin.$suggestSolution = "7";
 UART1.uart.rxPin.$suggestSolution = "6";

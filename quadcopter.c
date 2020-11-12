@@ -25,14 +25,9 @@ float compass_heading(float mx, float my, float mz, float *pitch, float *roll)
 
     float heading = atan2(hy, hx)*57.296;
 
-    if(hy < 0 )
-    {
-        heading = 180 + (180 + atan2(hy, hx)*57.296);
-    }
-    else
-    {
-        heading = atan2(hy, hx)*57.296;
-    }
+    if(hy < 0 ) heading = 180 + (180 + atan2(hy, hx)*57.296);
+    else        heading = atan2(hy, hx)*57.296;
+
 
     return heading;
 }
@@ -130,7 +125,7 @@ void *mainThread(void *arg0)
         yaw = 0.98 * yaw + 0.02 * mag_yaw;
 
         //6. Debug data here
-        UARTDEBUG_printf("%f,%f,%f,%f\n", pitch, roll, yaw, dt);
+        //UARTDEBUG_printf("%f,%f,%f,%f\n", pitch, roll, yaw, dt);
 
         dt = (millis() - start)/1e3;
         t += dt;
