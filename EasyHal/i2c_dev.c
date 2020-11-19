@@ -16,7 +16,7 @@
 #include <ti/drivers/I2C.h>
 #include "ti_drivers_config.h"
 
-I2C_Handle MPU9250_handle;
+I2C_Handle I2C_handle;
 bool i2c_initialized = false;
 
 void i2c_dev_init(uint32_t i2c_clock)
@@ -39,9 +39,9 @@ void i2c_dev_init(uint32_t i2c_clock)
         break;
     }
 
-    MPU9250_handle = I2C_open(CONFIG_I2C_0, &params);
+    I2C_handle = I2C_open(CONFIG_I2C_0, &params);
 
-    if(MPU9250_handle == 0)
+    if(I2C_handle == 0)
     {
         //Failed to open I2C
         while(1);
@@ -60,7 +60,7 @@ bool i2c_dev_write(uint8_t slave_address, uint8_t *data, uint32_t size)
     t.readBuf = NULL;
     t.readCount = 0;
 
-    return I2C_transfer(MPU9250_handle, &t);
+    return I2C_transfer(I2C_handle, &t);
 }
 
 bool i2c_dev_read(uint8_t slave_address, uint8_t reg, uint8_t *data, uint32_t size)
@@ -73,7 +73,7 @@ bool i2c_dev_read(uint8_t slave_address, uint8_t reg, uint8_t *data, uint32_t si
     t.writeBuf = &reg;
     t.writeCount = 1;
 
-    return I2C_transfer(MPU9250_handle, &t);
+    return I2C_transfer(I2C_handle, &t);
 }
 
 #elif defined(MSP432P401R_DRIVERLIB_I2C)

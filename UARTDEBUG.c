@@ -4,14 +4,34 @@
 #include <stdint.h>
 #include <stdarg.h>
 
+#include <ti/drivers/UART.h>
+#include "ti_drivers_config.h"
+
+UART_Handle UARTDEBUG_handle;
+
 void UARTDEBUG_init(uint32_t baudrate)
 {
-    uart_dev_init(UART0, baudrate);
+    UART_Params params;
+
+    UART_Params_init(&params);
+    params.baudRate = baudrate;
+    params.readMode = UART_MODE_BLOCKING;
+    params.writeMode = UART_MODE_BLOCKING;
+    params.readTimeout = 100;
+    params.writeTimeout = UART_WAIT_FOREVER;
+    params.readEcho = UART_ECHO_OFF;
+    params.dataLength = UART_LEN_8;
+
+    UARTDEBUG_handle = UART_open(CONFIG_UART_0, &params);
+    if (UARTDEBUG_handle == NULL)
+    {
+        while(1);
+    }
 }
 
-void PrintChar(char c)
+inline void PrintChar(char c)
 {
-    uart_dev_write(UART0, (uint8_t*)&c, 1);
+    UART_write(UARTDEBUG_handle, (uint8_t*)&c, 1);
 }
 
 void PrintString(char *string)
@@ -162,67 +182,64 @@ void UARTDEBUG_printf(const char *fs, ...)
     }
 }
 
-int UARTDEBUG_gets(char *str, int length, bool terminal)
+int UARTDEBUG_gets(char *str, int length, int tries, bool terminal)
 {
     char c;
     uint32_t i = 0;
 
-    while(1)
+    while(tries)
     {
-        uart_dev_read(UART0, (uint8_t*)&c, 1);
+        while(UART_read(UARTDEBUG_handle, (uint8_t*)&c, 1))
+        {
+            if((c == '\n') || (c == '\r'))
+            {
+                //TODO: Check buffer overflow condition
+                str[i++] = '\0';
 
-       /*put a '\n' and '\r' if it fits on the buffer*/
-       if((c == '\n') || (c == '\r'))
-       {
-           if(i + 3 > length)
-           {
-               return length + 1;
-           }
+                if(terminal)
+                {
+                    PrintString("\r\n");
+                }
 
-           str[i++] = '\r';
-           str[i++] = '\n';
-           str[i++] = 0;
+                return i;
+            }
+            /*Erase data from buffer if backspace is received*/
+            else if((c == 127) || (c == 8))
+            {
+                if(i > 0)
+                {
+                    i--;
+                }
+                str[i] = 0;
 
-           if(terminal)
-           {
-               PrintString("\r\n");
-           }
+                if(terminal)
+                {
+                    PrintString("\x1B[1D");
+                    PrintString(" ");
+                    PrintString("\x1B[1D");
+                }
+            }
+            /*Store character on the buffer*/
+            else
+            {
+                if(i < length)
+                {
+                    str[i++] = c;
 
-           return i;
-       }
-       /*Erase data from buffer if backspace is received*/
-       else if((c == 127) || (c == 8))
-       {
-           if(i > 0)
-           {
-               i--;
-           }
-           str[i] = 0;
+                    if(terminal)
+                    {
+                        PrintChar(c);
+                    }
+                }
+                else
+                {
+                    return length + 1;
+                }
+            }
+        }
 
-           if(terminal)
-           {
-               PrintString("\x1B[1D");
-               PrintString(" ");
-               PrintString("\x1B[1D");
-           }
-       }
-       /*Store character on the buffer*/
-       else
-       {
-           if(i < length)
-           {
-               str[i++] = c;
-
-               if(terminal)
-               {
-                   PrintChar(c);
-               }
-           }
-           else
-           {
-               return length + 1;
-           }
-       }
-
+        tries--;
     }
+
+    return i;
 }

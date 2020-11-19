@@ -17,7 +17,7 @@ void ESC_init(void)
 void ESC_speed(uint32_t esc, uint32_t duty)
 {
     if(duty > MAX_PWM_COUNT) duty = MAX_PWM_COUNT;
-    if(duty < MAX_PWM_COUNT) duty = MIN_PWM_COUNT;
+    if(duty < MIN_PWM_COUNT) duty = MIN_PWM_COUNT;
 
     pwm_dev_duty(esc, duty);
 }
@@ -47,12 +47,14 @@ void ESC_arm(void)
     ESC_speed(ESC1, MIN_PWM_COUNT);
     ESC_speed(ESC2, MIN_PWM_COUNT);
     ESC_speed(ESC3, MIN_PWM_COUNT);
-    sleep(5);
+    sleep(1);
 }
 
 //RANGE: 12,000 (1ms) - 24,000 (2ms) for SMCLK @ 12MHz!
 void ESC_calibrate(void)
 {
+    sleep(1);
+
     //Full throttle
     ESC_speed(ESC0, MAX_PWM_COUNT);
     ESC_speed(ESC1, MAX_PWM_COUNT);

@@ -33,15 +33,19 @@ void GPS_init(void)
     UART_Params_init(&params);
     params.baudRate = 9600;
     params.readMode = UART_MODE_BLOCKING;
-    //params.readCallback = GPS_UART_callback;
-    params.readDataMode = UART_DATA_BINARY;
-    params.writeMode = UART_MODE_BLOCKING;
-    params.readEcho = UART_ECHO_OFF;
-    params.writeTimeout = UART_WAIT_FOREVER;
     params.readTimeout = 0;
+    params.writeMode = UART_MODE_BLOCKING;
+    params.writeTimeout = UART_WAIT_FOREVER;
+    params.readEcho = UART_ECHO_OFF;
+    params.readDataMode = UART_DATA_BINARY;
 
     // Open the UART
     GPS_UART = UART_open(CONFIG_UART_2, &params);
+
+    if(GPS_UART == NULL)
+    {
+        while(1);
+    }
 }
 
 void GPS_read(float *location, uint32_t *satellites)

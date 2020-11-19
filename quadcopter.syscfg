@@ -9,6 +9,8 @@
  * Import the modules used in this configuration.
  */
 const DriverLib = scripting.addModule("/ti/devices/DriverLib");
+const ADC       = scripting.addModule("/ti/drivers/ADC", {}, false);
+const ADC1      = ADC.addInstance();
 const Board     = scripting.addModule("/ti/drivers/Board");
 const Capture   = scripting.addModule("/ti/drivers/Capture", {}, false);
 const Capture1  = Capture.addInstance();
@@ -34,6 +36,11 @@ const UART3     = UART.addInstance();
 /**
  * Write custom configuration values to the imported modules.
  */
+ADC1.$name              = "CONFIG_ADC_0";
+ADC1.adc.$name          = "MyADC141";
+ADC1.adc.$assign        = "ADC14";
+ADC1.adc.adcPin.$assign = "boosterpack.30";
+
 Capture1.$name                    = "CONFIG_CAPTURE_0";
 Capture1.timer.$name              = "MyTIMER_A1";
 Capture1.timer.$assign            = "Timer_A2";

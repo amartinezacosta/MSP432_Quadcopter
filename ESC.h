@@ -2,6 +2,7 @@
 #define SERVO_H_
 
 #include <stdint.h>
+#include <EasyHal/pwm_dev.h>
 
 #define ESC0    PWM0
 #define ESC1    PWM1

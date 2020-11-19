@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define UARTDEBUG_WAIT_FOREVER      0xFFFFFFFF
+
 /*
  * Function:  UARTDEBUG_init
  * --------------------
@@ -49,6 +51,6 @@ void UARTDEBUG_printf(const char *fs, ...);
  *
  *  returns: int -> number of received characters on the string
  */
-int UARTDEBUG_gets(char *str, int length, bool terminal);
+int UARTDEBUG_gets(char *str, int length, int tries, bool terminal);
 
 #endif /* UART_DEBUGGER_H_ */

@@ -61,6 +61,11 @@ void QMC5883_raw_magnetometer(int16_t *mag)
     mag[2] = ((int16_t)(raw_data[5] << 8)) | raw_data[4];
 }
 
+void QMC5883_calibrate_magnetometer(int32_t *offsets)
+{
+
+}
+
 void QMC5883_magnetometer(float *magnetometer, int32_t *offsets)
 {
     int16_t raw_mag[3];
