@@ -84,6 +84,7 @@ void QMC5883_set_rate(uint8_t rate);
 void QMC5883_set_measurement(uint8_t mode);
 void QMC5883_set_range(uint8_t range);
 void QMC5883_raw_magnetometer(int16_t *mag);
+void QMC5883_calibrate_magnetometer(int32_t *offsets);
 
 void QMC5883_magnetometer(float *magnetometer, int32_t *offsets);
 

@@ -6,7 +6,7 @@
 #include "RC.h"
 #include "IMU.h"
 #include "LED.h"
-#include "CLI.h"
+#include "CLI/CLI.h"
 
 #include "UARTDEBUG.h"
 #include "telemetry.h"
@@ -14,51 +14,6 @@
 #include "EasyHal/time_dev.h"
 
 #include <string.h>
-
-int cli_sensor_calibrate(char **argv, int argc)
-{
-    return CMD_OK;
-}
-
-int cli_sensor_check(char **argv, int argc)
-{
-    return CMD_OK;
-}
-
-int cli_sensor_read(char **argv, int argc)
-{
-    return CMD_OK;
-}
-
-int cli_sensor_calibrate_read(char **argv, int argc)
-{
-    return CMD_OK;
-}
-
-int cli_imu_read(char **argv, int argc)
-{
-    return CMD_OK;
-}
-
-int cli_test_led(char **argv, int argc)
-{
-    return CMD_OK;
-}
-
-int cli_vbat_read(char **argv, int argc)
-{
-    return CMD_OK;
-}
-
-int cli_rc_read(char **argv, int argc)
-{
-    return CMD_OK;
-}
-
-int cli_motor_check(char **argv, int argc)
-{
-    return CMD_OK;
-}
 
 void *mainThread(void *arg0)
 {
@@ -120,12 +75,10 @@ void *mainThread(void *arg0)
     }
 
     //2. Calibrate Sensors
-    LED_sequence(RED_LED, Hz_10, 10);
     MPU6050_calibrate_gyroscope(gyro_offset, 4);
     MPU6050_calibrate_accelerometer(accel_offset, 4);
 
     //3. Use accelerometer and magnetometer to set initial frame of reference
-    LED_sequence(RED_LED, Hz_20, 20);
     MPU6050_accelerometer(accel, accel_offset);
     QMC5883_magnetometer(mag, mag_offset);
 

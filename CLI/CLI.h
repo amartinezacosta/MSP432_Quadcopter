@@ -17,5 +17,6 @@ typedef struct
 void cli(void);
 int cli_parse(char *line, char **argv);
 int cli_run(char **argv, int argc);
+void cli_reply(char **argv, int result);
 
 #endif /* CLI_H_ */

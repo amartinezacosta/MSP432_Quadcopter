@@ -1,6 +1,7 @@
 #include "MPU6050.h"
 #include "EasyHal/i2c_dev.h"
 #include "EasyHal/time_dev.h"
+#include "LED.h"
 
 //Based on jrowberg I2Cdev library
 
@@ -104,6 +105,7 @@ void MPU6050_raw_gyroscope(int16_t *gyro)
 void MPU6050_calibrate_accelerometer(int32_t *offsets, uint32_t dt)
 {
     int16_t raw_accel[3];
+    uint8_t led_value = 0;
 
     //Calibrate accelerometer
     uint32_t i;
@@ -117,17 +119,26 @@ void MPU6050_calibrate_accelerometer(int32_t *offsets, uint32_t dt)
 
         offsets[2] += raw_accel[2];
 
+        if((i % 32) == 0)
+        {
+            led_value = (led_value == 0) ? 1 : 0;
+            LED_solid(RED_LED, led_value);
+        }
+
         delay(dt);
     }
 
     offsets[0] /= 200;
     offsets[1] /= 200;
     offsets[2] /= 200;
+
+    LED_solid(RED_LED, 1);
 }
 
 void MPU6050_calibrate_gyroscope(int32_t *offsets, uint32_t dt)
 {
     int16_t raw_gyro[3];
+    uint8_t led_value = 0;
 
     //Calibrate gyroscope
     uint32_t i;
@@ -139,12 +150,20 @@ void MPU6050_calibrate_gyroscope(int32_t *offsets, uint32_t dt)
         offsets[1] += raw_gyro[1];
         offsets[2] += raw_gyro[2];
 
+        if((i % 16) == 0)
+        {
+            led_value = (led_value == 0) ? 1 : 0;
+            LED_solid(RED_LED, led_value);
+        }
+
         delay(dt);
     }
 
     offsets[0] /= 2000;
     offsets[1] /= 2000;
     offsets[2] /= 2000;
+
+    LED_solid(RED_LED, 1);
 }
 
 void MPU6050_gyroscope(float *gyrosocope, int32_t *offsets)
